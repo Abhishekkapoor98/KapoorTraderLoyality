@@ -88,6 +88,16 @@ func main() {
 		port = "8080" // Fallback for local development
 	}
 
+	// Diagnostic: List all embedded files in web/templates
+	entries, err := loyalty.TemplatesFS.ReadDir("web/templates")
+	if err != nil {
+	    log.Println("Diagnostic Error: could not read web/templates folder:", err)
+	} else {
+	    for _, e := range entries {
+	        log.Printf("Diagnostic - Embedded file found: '%s'\n", e.Name())
+	    }
+	}
+		
 	log.Println("server running on port " + port)
 
 	// 3. Listen on the dynamic port
