@@ -1,0 +1,6 @@
+INSERT INTO shops (id, name)
+VALUES (
+    '11111111-1111-1111-1111-111111111111',
+    'Demo Restaurant'
+)
+ON CONFLICT (id) DO NOTHING;
