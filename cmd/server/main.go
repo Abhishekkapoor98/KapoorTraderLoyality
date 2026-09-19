@@ -60,9 +60,27 @@ func main() {
 	http.HandleFunc("GET /shopkeeper/{shopID}/qr", shopkeeperHandler.GenerateQRCode)
 	http.HandleFunc("POST /shopkeeper/{shopID}/redeem/{customerID}", shopkeeperHandler.RedeemPrize)
 
-	log.Println("server running on http://localhost:8080")
+	// 1. Add a root route to prevent the 404 Not Found error
+	http.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
+		// Prevent wildcard catching everything if you only want it on the exact root
+		if r.URL.Path != "/" {
+			http.NotFound(w, r)
+			return
+		}
+		w.Write([]byte("Kapoor Trader Loyalty App is live!"))
+	})
 
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	// 2. Read Render's dynamic PORT environment variable
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080" // Fallback for local development
+	}
+
+	log.Println("server running on port " + port)
+
+	// 3. Listen on the dynamic port
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal(err)
 	}
+
 }
