@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"net/http"
 
+	loyalty "kapoortrader-loyalty"
 	"kapoortrader-loyalty/internal/repository"
 
 	"github.com/skip2/go-qrcode"
@@ -43,16 +44,14 @@ func (h *ShopkeeperHandler) ServeDashboardPage(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	tmpl, err := template.ParseFiles("web/templates/dashboard.html")
+	tmpl, err := template.ParseFS(loyalty.TemplatesFS, "web/templates/dashboard.html")
 	if err != nil {
 		http.Error(w, "template not found", http.StatusInternalServerError)
 		return
 	}
-
 	tmpl.Execute(w, nil)
 }
 
-// GenerateQRCode creates a scannable PNG image linking to the customer check-in page
 func (h *ShopkeeperHandler) GenerateQRCode(w http.ResponseWriter, r *http.Request) {
 	shopID := r.PathValue("shopID")
 	if shopID == "" {
@@ -60,14 +59,13 @@ func (h *ShopkeeperHandler) GenerateQRCode(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Construct the URL the customer will scan
 	scheme := "http://"
-	if r.TLS != nil {
+	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
 		scheme = "https://"
 	}
+
 	customerURL := fmt.Sprintf("%s%s/c/%s", scheme, r.Host, shopID)
 
-	// Generate the QR code as a PNG
 	png, err := qrcode.Encode(customerURL, qrcode.Medium, 256)
 	if err != nil {
 		http.Error(w, "failed to generate QR", http.StatusInternalServerError)
@@ -78,7 +76,6 @@ func (h *ShopkeeperHandler) GenerateQRCode(w http.ResponseWriter, r *http.Reques
 	w.Write(png)
 }
 
-// RedeemPrize processes a claimed reward
 func (h *ShopkeeperHandler) RedeemPrize(w http.ResponseWriter, r *http.Request) {
 	shopID := r.PathValue("shopID")
 	customerID := r.PathValue("customerID")

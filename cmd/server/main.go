@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	loyalty "kapoortrader-loyalty"
 	deliveryHttp "kapoortrader-loyalty/internal/delivery/http"
 	"kapoortrader-loyalty/internal/infrastructure/postgres"
 	"kapoortrader-loyalty/internal/usecase"
@@ -13,7 +14,6 @@ import (
 
 func main() {
 	ctx := context.Background()
-
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
 		dsn = "postgres://loyalty:loyalty@localhost:5432/loyalty?sslmode=disable"
@@ -25,6 +25,21 @@ func main() {
 	}
 	defer db.Close()
 
+	// Execute embedded migrations automatically
+	initSQL, err := loyalty.MigrationsFS.ReadFile("migrations/001_init.sql")
+	if err == nil {
+		if _, err := db.ExecContext(ctx, string(initSQL)); err != nil {
+			log.Printf("Init migration skipped or already applied: %v\n", err)
+		}
+	}
+
+	seedSQL, err := loyalty.MigrationsFS.ReadFile("migrations/002_seed.sql")
+	if err == nil {
+		if _, err := db.ExecContext(ctx, string(seedSQL)); err != nil {
+			log.Printf("Seed migration skipped or already applied: %v\n", err)
+		}
+	}
+
 	// 1. Initialize Repositories
 	customerRepo := postgres.NewCustomerRepository(db)
 	shopCustomerRepo := postgres.NewShopCustomerRepository(db)
@@ -34,7 +49,6 @@ func main() {
 
 	// 3. Initialize HTTP Handlers
 	customerHandler := deliveryHttp.NewCustomerHandler(customerService)
-
 	shopkeeperHandler := deliveryHttp.NewShopkeeperHandler(shopCustomerRepo)
 
 	http.HandleFunc("GET /shopkeeper/{shopID}/dashboard/data", shopkeeperHandler.GetDashboardData)
@@ -49,14 +63,12 @@ func main() {
 		_, _ = w.Write([]byte("OK"))
 	})
 
-	// Go 1.22+ wildcard routing format[cite: 1]
+	// Go 1.22+ wildcard routing format
 	http.HandleFunc("GET /c/{shopID}", customerHandler.ServeCustomerLoginPage)
 	http.HandleFunc("POST /c/{shopID}/login", customerHandler.LoginAndPurchase)
 
 	// Shopkeeper Routes
 	http.HandleFunc("GET /shopkeeper/{shopID}/dashboard", shopkeeperHandler.ServeDashboardPage)
-
-	// Add these two new routes:
 	http.HandleFunc("GET /shopkeeper/{shopID}/qr", shopkeeperHandler.GenerateQRCode)
 	http.HandleFunc("POST /shopkeeper/{shopID}/redeem/{customerID}", shopkeeperHandler.RedeemPrize)
 
@@ -82,5 +94,4 @@ func main() {
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal(err)
 	}
-
 }

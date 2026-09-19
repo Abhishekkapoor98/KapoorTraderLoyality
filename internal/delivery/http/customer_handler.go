@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"text/template"
 
+	loyalty "kapoortrader-loyalty"
 	"kapoortrader-loyalty/internal/usecase"
 )
 
@@ -30,7 +31,6 @@ type LoginResponse struct {
 }
 
 func (h *CustomerHandler) LoginAndPurchase(w http.ResponseWriter, r *http.Request) {
-	// Go 1.22+ supports extracting wildcards directly from the URL path
 	shopID := r.PathValue("shopID")
 	if shopID == "" {
 		http.Error(w, "missing shop ID", http.StatusBadRequest)
@@ -48,7 +48,6 @@ func (h *CustomerHandler) LoginAndPurchase(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Pass the data to our Clean Architecture use case
 	shopCustomer, customer, err := h.customerService.LoginAndPurchase(r.Context(), shopID, req.Name, req.Phone)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -56,8 +55,8 @@ func (h *CustomerHandler) LoginAndPurchase(w http.ResponseWriter, r *http.Reques
 	}
 
 	msg := "Purchase recorded!"
-	if shopCustomer.AvailableRewards() > 0 { // Business logic remains safely in the domain model
-		msg = "🎁 Free Prize Available!"
+	if shopCustomer.AvailableRewards() > 0 {
+		msg = "🎉 Free Prize Available!"
 	}
 
 	resp := LoginResponse{
@@ -79,11 +78,10 @@ func (h *CustomerHandler) ServeCustomerLoginPage(w http.ResponseWriter, r *http.
 		return
 	}
 
-	tmpl, err := template.ParseFiles("web/templates/customer_login.html")
+	tmpl, err := template.ParseFS(loyalty.TemplatesFS, "web/templates/customer_login.html")
 	if err != nil {
 		http.Error(w, "template not found", http.StatusInternalServerError)
 		return
 	}
-
 	tmpl.Execute(w, nil)
 }
