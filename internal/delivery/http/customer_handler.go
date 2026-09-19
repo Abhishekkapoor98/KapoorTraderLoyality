@@ -2,8 +2,8 @@ package http
 
 import (
 	"encoding/json"
+	"html/template"
 	"net/http"
-	"text/template"
 
 	loyalty "kapoortrader-loyalty"
 	"kapoortrader-loyalty/internal/usecase"
@@ -78,10 +78,19 @@ func (h *CustomerHandler) ServeCustomerLoginPage(w http.ResponseWriter, r *http.
 		return
 	}
 
-	tmpl, err := template.ParseFS(loyalty.TemplatesFS, "web/templates/customer_login.html")
+	htmlBytes, err := loyalty.TemplatesFS.ReadFile("web/templates/customer_login.html")
 	if err != nil {
-		http.Error(w, "template not found", http.StatusInternalServerError)
+		http.Error(w, "failed to read template: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	tmpl.Execute(w, nil)
+
+	tmpl, err := template.New("login").Parse(string(htmlBytes))
+	if err != nil {
+		http.Error(w, "failed to parse template: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := tmpl.Execute(w, nil); err != nil {
+		http.Error(w, "failed to execute template: "+err.Error(), http.StatusInternalServerError)
+	}
 }

@@ -44,12 +44,21 @@ func (h *ShopkeeperHandler) ServeDashboardPage(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	tmpl, err := template.ParseFS(loyalty.TemplatesFS, "web/templates/dashboard.html")
+	htmlBytes, err := loyalty.TemplatesFS.ReadFile("web/templates/dashboard.html")
 	if err != nil {
-		http.Error(w, "template not found", http.StatusInternalServerError)
+		http.Error(w, "failed to read template: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	tmpl.Execute(w, nil)
+
+	tmpl, err := template.New("dashboard").Parse(string(htmlBytes))
+	if err != nil {
+		http.Error(w, "failed to parse template: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := tmpl.Execute(w, nil); err != nil {
+		http.Error(w, "failed to execute template: "+err.Error(), http.StatusInternalServerError)
+	}
 }
 
 func (h *ShopkeeperHandler) GenerateQRCode(w http.ResponseWriter, r *http.Request) {
