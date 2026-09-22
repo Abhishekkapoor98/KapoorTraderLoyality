@@ -39,3 +39,34 @@ The easiest way to get the application and its database running is via Docker Co
 2. Build and start the containers:
    ```bash
    docker-compose up --build
+
+
+Public Endpoints
+GET / : Renders the landing page (index.html)[cite: 1].
+
+Authentication Endpoints
+GET /register : Renders the user registration form (register.html)[cite: 1].
+
+POST /register : Processes new user account creation.
+
+GET /login : Renders the authentication form (login.html)[cite: 1].
+
+POST /login : Authenticates a user and establishes a session.
+
+POST /logout : Terminates the current user session.
+
+Authenticated/Protected Endpoints
+GET /dashboard : Renders the main user control panel (dashboard.html)[cite: 1].
+
+GET /product/edit/{id} : Renders the form to modify an existing farm product (edit_product.html)[cite: 1].
+
+POST /product/edit/{id} : Submits and processes updates to a specific product.
+
+Future Enhancements
+Implementation of a RESTful JSON API alongside the server-rendered templates.
+
+Integration of unit testing and mocking for usecases and repositories.
+
+CI/CD pipeline configuration for automated deployments.
+
+Developed for the Farm Connect MVP.
